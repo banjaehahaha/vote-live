@@ -1,0 +1,27 @@
+// Postgres 전용. Vercel Postgres / DATABASE_URL 사용.
+// Edge 런타임 미지원이므로 nodejs 사용.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VoteChoice {
+  ITEM
+  IMAGE
+  DATA
+  NEAR
+}
+
+model VoteEvent {
+  id        String     @id @default(uuid())
+  sid       String
+  choice    VoteChoice
+  createdAt DateTime   @default(now())
+
+  @@index([sid, choice])
+  @@map("vote_events")
+}
