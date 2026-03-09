@@ -7,10 +7,11 @@ import { defineConfig } from "prisma/config";
 // 프로젝트 루트의 .env를 명시적으로 로드 (migrate dev 등 CLI에서 url 인식되도록)
 config({ path: path.resolve(process.cwd(), ".env") });
 
-const databaseUrl = process.env["DATABASE_URL"];
-if (!databaseUrl) {
+// 마이그레이션/CLI는 direct connection 사용 (풀러 우회). 없으면 DATABASE_URL 사용.
+const directUrl = process.env["DIRECT_URL"] || process.env["DATABASE_URL"];
+if (!directUrl) {
   throw new Error(
-    "DATABASE_URL이 비어 있습니다. 프로젝트 루트의 .env 파일을 열어 다음 한 줄을 추가한 뒤 다시 실행하세요 (등호 앞뒤 공백 없이):\n  DATABASE_URL=\"postgresql://USER:PASSWORD@localhost:5432/DB이름\""
+    "DIRECT_URL 또는 DATABASE_URL이 필요합니다. .env에 DATABASE_URL=\"postgresql://...\" 또는 DIRECT_URL=\"postgresql://...\" 를 추가하세요."
   );
 }
 
@@ -20,6 +21,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: databaseUrl,
+    url: directUrl,
   },
 });

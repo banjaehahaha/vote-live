@@ -13,8 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "발표용 투표",
-  description: "발표용 실시간 투표 시스템",
+  title: "Jaeha Ban",
 };
 
 export default function RootLayout({

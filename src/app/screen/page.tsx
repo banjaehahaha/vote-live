@@ -20,9 +20,12 @@ const LABELS: Record<keyof Counts, string> = {
  * 스크린 집계 페이지. 1초 폴링, 실패 시 exponential backoff로 재시도.
  * 성공 시 1초 폴링으로 복귀. 장시간 켜둬도 리프레시 없이 계속 반영.
  */
+const DEFAULT_SID = "test1";
+
 function ScreenContent() {
   const searchParams = useSearchParams();
-  const sid = searchParams.get("sid");
+  const sidParam = searchParams.get("sid");
+  const sid = sidParam && /^[a-z0-9-]{1,32}$/.test(sidParam) ? sidParam : DEFAULT_SID;
   const [counts, setCounts] = useState<Counts>({
     ITEM: 0,
     IMAGE: 0,
@@ -91,23 +94,22 @@ function ScreenContent() {
     };
 
     run();
+
+    // 백그라운드 탭에서 돌아왔을 때 즉시 한 번 다시 불러오기 (Safari 등에서 탭 전환 후 갱신 안 되는 현상 완화)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible" && mountedRef.current) fetchState();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
     };
   }, [sid, fetchState]);
-
-  if (!sid || !/^[a-z0-9-]{1,32}$/.test(sid)) {
-    return (
-      <main style={{ padding: "2rem", textAlign: "center" }}>
-        <h1>세션(sid) 없음</h1>
-        <p>URL에 세션 ID가 필요합니다. 예: /screen?sid=test1</p>
-      </main>
-    );
-  }
 
   const total = counts.ITEM + counts.IMAGE + counts.DATA + counts.NEAR;
   const maxCount = Math.max(1, ...Object.values(counts));
@@ -122,6 +124,16 @@ function ScreenContent() {
         fontFamily: "system-ui, sans-serif",
       }}
     >
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "1.5rem" }}>
+        <img
+          src="/vote-qr.png"
+          alt="투표 페이지 QR 코드"
+          style={{ width: "160px", height: "160px" }}
+        />
+        <span style={{ marginTop: "0.5rem", fontSize: "0.95rem", opacity: 0.9 }}>
+          vote.banjaeha.com/mobile
+        </span>
+      </div>
       <div style={{ marginBottom: "1.5rem", fontSize: "0.9rem" }}>
         <span>
           {status === "connected" && "Connected"}

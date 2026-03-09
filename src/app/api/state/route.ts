@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
       counts[g.choice] = g._count.choice;
     }
 
+    const totalVotes = counts.ITEM + counts.IMAGE + counts.DATA + counts.NEAR;
+
     const latest = await prisma.voteEvent.findFirst({
       where: { sid },
       orderBy: { createdAt: "desc" },
@@ -52,6 +54,7 @@ export async function GET(request: NextRequest) {
           DATA: counts.DATA,
           NEAR: counts.NEAR,
         },
+        totalVotes,
         updatedAt: latest?.createdAt?.toISOString() ?? new Date().toISOString(),
       },
       { headers: { "Cache-Control": NO_STORE } }
