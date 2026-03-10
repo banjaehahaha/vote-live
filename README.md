@@ -12,7 +12,8 @@ Next.js (App Router) + TypeScript 기반. 1회 발표에서 버그/운영 리스
 ## 요구사항
 
 - Node.js 18+
-- **PostgreSQL** (로컬 또는 Vercel Postgres). SQLite 미지원.
+- **Redis** (실시간 투표/집계용): Vercel KV 또는 Upstash. `/api/vote`, `/api/state`가 사용합니다.
+- **PostgreSQL** (선택): 발표 핫패스에서는 사용하지 않음. 마이그레이션·기타용. 로컬 또는 Vercel Postgres.
 
 ---
 
@@ -31,10 +32,16 @@ npm install
 cp .env.example .env
 ```
 
-`.env`에서 `DATABASE_URL`을 실제 Postgres 연결 문자열로 수정합니다.
+`.env`에서 다음을 설정합니다.
+
+- **실시간 투표용 (필수)**: `KV_REST_API_URL` + `KV_REST_API_TOKEN` (Vercel KV) 또는 `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (Upstash).  
+  자세한 값은 Vercel Storage → KV 또는 Upstash 콘솔에서 확인.
+- **Postgres (선택)**: `DATABASE_URL` — 마이그레이션 등에만 사용.
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/vote_live"
+KV_REST_API_URL="https://xxx.upstash.io"
+KV_REST_API_TOKEN="AXXX..."
+# DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/vote_live"  # 선택
 ```
 
 ### 3. DB 연결 및 마이그레이션
@@ -75,10 +82,15 @@ npm run dev
 
 ---
 
-## DB 연결 방법
+## Redis / DB 연결 방법
 
-- **로컬**: Postgres 설치 후 `DATABASE_URL`에 `postgresql://user:password@localhost:5432/DB명` 형식으로 설정.
-- **Vercel Postgres**: Vercel 대시보드 → 프로젝트 → Storage → Create Database → Postgres 선택 후 연결. 연결 정보에서 `DATABASE_URL`을 환경 변수로 프로젝트에 추가. 배포 후 `npm run db:migrate` 또는 Vercel 빌드 시 자동 마이그레이션 스크립트 실행.
+- **실시간 투표 (Redis)**: `/api/vote`, `/api/state`는 **Redis만** 사용합니다.  
+  - **Vercel KV**: Storage → Create Database → KV → `.env.local` 탭에서 `KV_REST_API_URL`, `KV_REST_API_TOKEN` 복사 후 프로젝트 환경 변수에 추가.  
+  - **Upstash**: Upstash 콘솔에서 Redis 생성 후 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`을 환경 변수로 추가.  
+  배포 가이드·부하 테스트 방법은 **DEPLOY.md**, **LOADTEST.md** 참고.
+- **Postgres (선택)**: 발표 중 핫패스에서는 사용하지 않음. 마이그레이션·기타용.  
+  로컬: `DATABASE_URL`에 `postgresql://user:password@localhost:5432/DB명` 설정.  
+  Vercel Postgres: Storage → Postgres → 연결 정보를 환경 변수에 추가.
 
 ---
 
@@ -114,7 +126,8 @@ npm run dev
 ## 로컬 동작 확인 체크리스트
 
 - [ ] `npm run db:generate` 성공
-- [ ] `.env`에 `DATABASE_URL` 설정 후 `npm run db:migrate:dev` 성공 (또는 `db:push`)
+- [ ] `.env`에 Redis용 `KV_REST_API_URL`·`KV_REST_API_TOKEN` (또는 Upstash 변수) 설정
+- [ ] (선택) `.env`에 `DATABASE_URL` 설정 후 `npm run db:migrate:dev` 성공 (또는 `db:push`)
 - [ ] `npm run dev` 후 `http://localhost:3000` 접속
 - [ ] `/v?sid=test1` 접속 → 4개 버튼 표시, 한 항목 클릭 시 "전송중…" 후 `/r/[choice]?sid=test1`로 이동
 - [ ] `/r/ITEM?sid=test1` 등에서 카드 문구·이미지 placeholder·"이제 스크린을 봐주세요." 표시
@@ -130,10 +143,11 @@ npm run dev
 - `src/app/v/page.tsx` — 투표 페이지 (클라이언트)
 - `src/app/r/[choice]/page.tsx` — 결과 카드 (서버)
 - `src/app/screen/page.tsx` — 스크린 집계 (클라이언트, 폴링)
-- `src/app/api/vote/route.ts` — POST 투표
-- `src/app/api/state/route.ts` — GET sid별 집계
+- `src/app/api/vote/route.ts` — POST 투표 (Redis)
+- `src/app/api/state/route.ts` — GET sid별 집계 (Redis)
+- `src/lib/redis.ts` — Redis 클라이언트 (Upstash/Vercel KV)
 - `src/lib/validation.ts` — sid/choice 검증
-- `src/lib/db.ts` — Prisma 클라이언트 (nodejs, adapter-pg)
-- `prisma/schema.prisma` — VoteEvent 테이블
+- `src/lib/db.ts` — Prisma 클라이언트 (발표 핫패스 미사용, 기타용)
+- `prisma/schema.prisma` — VoteEvent 테이블 (참고용, 실시간 투표는 Redis)
 
 도메인 연결은 별도 설정. 현재는 로컬 및 Vercel 기본 URL로 테스트 가능합니다.

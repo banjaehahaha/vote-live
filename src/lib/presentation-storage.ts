@@ -33,6 +33,7 @@ export interface PresentationSnapshot {
   allocations: AllocationsMs; // ms
   currentStage: PresentationStage;
   currentWorkIndex: number; // 0..3
+  sceneIndex?: number; // 현재 작업 내 장면 인덱스 (복구용)
   timerStatus: TimerStatus;
   targetTime: number | null; // Date.now() + remainingMs (running일 때)
   pausedRemainingMs: number | null; // paused일 때 남은 시간

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrisma } from "@/lib/db";
+import { getRedis, voteKey, voteUpdatedKey, voteSessionKey } from "@/lib/redis";
 import { isValidSid, isValidChoice, type VoteChoice } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -9,7 +9,7 @@ const IS_DEV_OR_PREVIEW =
   process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "preview";
 
 function logDebug(
-  type: "validation_error" | "db_connection_error" | "unknown_error" | "success",
+  type: "validation_error" | "redis_error" | "unknown_error" | "success",
   data: Record<string, unknown>
 ) {
   const ts = new Date().toISOString();
@@ -19,7 +19,7 @@ function logDebug(
 /**
  * POST /api/vote
  * body: { sid, choice }
- * 캐시 비활성화로 항상 최신 상태 반영. 트랜잭션은 단일 insert로 원자성 보장.
+ * Redis hash vote:{sid} 의 choice 필드를 atomic increment.
  */
 export async function POST(request: NextRequest) {
   let sid: unknown;
@@ -44,9 +44,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await getPrisma().voteEvent.create({
-      data: { sid: sid as string, choice: choice as VoteChoice },
-    });
+    const redis = getRedis();
+    const sessionKey = voteSessionKey(sid as string);
+    const sessionRaw = await redis.hgetall(sessionKey);
+    const phase = sessionRaw && typeof sessionRaw === "object" && sessionRaw.phase === "running" ? "running" : sessionRaw && typeof sessionRaw === "object" && sessionRaw.phase === "closed" ? "closed" : "idle";
+    if (phase !== "running") {
+      return NextResponse.json(
+        { error: phase === "closed" ? "Vote has ended" : "Vote has not started" },
+        { status: 409, headers: { "Cache-Control": NO_STORE } }
+      );
+    }
+
+    const key = voteKey(sid as string);
+    const updatedKey = voteUpdatedKey(sid as string);
+    await redis.hincrby(key, choice as string, 1);
+    await redis.set(updatedKey, new Date().toISOString());
 
     if (DEBUG_VOTE) {
       logDebug("success", { sid, choice });
@@ -59,11 +71,9 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const e = err as Error & { code?: string };
     const msg = e?.message ?? String(err);
-    const isDbConnection =
-      /connect|upstream|ECONNREFUSED|ETIMEDOUT|connection/i.test(msg) ||
-      e?.code === "P1001" ||
-      e?.code === "P1017";
-    const errorType = isDbConnection ? "db_connection_error" : "unknown_error";
+    const isRedis =
+      /redis|upstash|ECONNREFUSED|ETIMEDOUT|connection/i.test(msg) || e?.code != null;
+    const errorType = isRedis ? "redis_error" : "unknown_error";
 
     const stackFirst = e?.stack?.split("\n")[1]?.trim() ?? "";
 

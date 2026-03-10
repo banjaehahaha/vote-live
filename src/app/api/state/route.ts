@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrisma } from "@/lib/db";
+import { getRedis, voteKey, voteUpdatedKey, voteSessionKey } from "@/lib/redis";
 import { isValidSid } from "@/lib/validation";
-import { VoteChoice } from "@prisma/client";
+import type { VoteChoice } from "@/lib/validation";
+import type { VoteSessionPhase } from "@/lib/redis";
 
 export const runtime = "nodejs";
 const NO_STORE = "no-store";
 
+const CHOICES: VoteChoice[] = ["ITEM", "IMAGE", "DATA", "NEAR"];
+
+function parseVoteSession(raw: Record<string, unknown> | null): { phase: VoteSessionPhase; closesAt: number | null } {
+  if (!raw || typeof raw !== "object") return { phase: "idle", closesAt: null };
+  const phase = (raw.phase === "running" || raw.phase === "closed" ? raw.phase : "idle") as VoteSessionPhase;
+  let closesAt: number | null = null;
+  if (raw.closesAt != null && raw.closesAt !== "") {
+    const n = Number(raw.closesAt);
+    if (!Number.isNaN(n)) closesAt = n;
+  }
+  return { phase, closesAt };
+}
+
 /**
  * GET /api/state?sid=...
- * sid별 choice COUNT 집계. 캐시 없이 항상 DB 기준 최신값 반환.
+ * Redis vote:{sid} 집계 + vote-session:{sid} 상태. totalVotes·updatedAt·voteSession 포함.
  */
 export async function GET(request: NextRequest) {
   const sid = request.nextUrl.searchParams.get("sid");
@@ -20,30 +34,34 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const prisma = getPrisma();
-    const groups = await prisma.voteEvent.groupBy({
-      by: ["choice"],
-      where: { sid },
-      _count: { choice: true },
-    });
+    const redis = getRedis();
+    const key = voteKey(sid);
+    const updatedKey = voteUpdatedKey(sid);
+    const sessionKey = voteSessionKey(sid);
 
+    const raw = await redis.hgetall(key);
     const counts: Record<VoteChoice, number> = {
       ITEM: 0,
       IMAGE: 0,
       DATA: 0,
       NEAR: 0,
     };
-    for (const g of groups) {
-      counts[g.choice] = g._count.choice;
+    if (raw && typeof raw === "object") {
+      for (const c of CHOICES) {
+        const v = raw[c];
+        if (v != null) counts[c] = Number(v) || 0;
+      }
     }
 
     const totalVotes = counts.ITEM + counts.IMAGE + counts.DATA + counts.NEAR;
+    const updatedAtRaw = await redis.get(updatedKey);
+    const updatedAt =
+      updatedAtRaw && typeof updatedAtRaw === "string"
+        ? updatedAtRaw
+        : null;
 
-    const latest = await prisma.voteEvent.findFirst({
-      where: { sid },
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true },
-    });
+    const sessionRaw = await redis.hgetall(sessionKey);
+    const voteSession = parseVoteSession(sessionRaw as Record<string, unknown> | null);
 
     return NextResponse.json(
       {
@@ -55,7 +73,8 @@ export async function GET(request: NextRequest) {
           NEAR: counts.NEAR,
         },
         totalVotes,
-        updatedAt: latest?.createdAt?.toISOString() ?? new Date().toISOString(),
+        updatedAt,
+        voteSession,
       },
       { headers: { "Cache-Control": NO_STORE } }
     );

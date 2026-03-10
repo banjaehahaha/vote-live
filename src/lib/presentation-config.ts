@@ -30,7 +30,7 @@ export const CHOICE_WORK_TITLES: Record<VoteChoice, string> = {
   ITEM: "허풍선이, 촌뜨기, 익살꾼",
   IMAGE: "HOME, SWEET HOME 시리즈",
   DATA: "정산없는 시장",
-  NEAR: "접경 리서치 / 현장 실패",
+  NEAR: "뜻밖의 보간과 최근접 이웃 찾기",
 };
 
 /** choice별 placeholder 설명 */

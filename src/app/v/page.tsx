@@ -12,13 +12,13 @@ const CHOICES: { value: VoteChoice; label: string }[] = [
 ];
 
 /**
- * 투표 페이지. sid 필수. 성공 시 hard redirect로 결과 페이지로 이동해
- * SPA 라우팅 오류/캐시 혼선을 피함.
+ * 투표 페이지. sid 필수. 성공 시 같은 페이지에 머물며 투표한 항목만 비활성화된 상태로 마무리.
  */
 function VoteContent() {
   const searchParams = useSearchParams();
   const sid = searchParams.get("sid");
   const [submitting, setSubmitting] = useState<VoteChoice | null>(null);
+  const [votedChoice, setVotedChoice] = useState<VoteChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleVote = useCallback(
@@ -39,7 +39,8 @@ function VoteContent() {
           setSubmitting(null);
           return;
         }
-        window.location.assign(`/r/${choice}?sid=${encodeURIComponent(sid)}`);
+        setVotedChoice(choice);
+        setSubmitting(null);
       } catch {
         setError("네트워크 오류입니다. 다시 시도해 주세요.");
         setSubmitting(null);
@@ -52,7 +53,7 @@ function VoteContent() {
     return (
       <main style={{ padding: "2rem", textAlign: "center" }}>
         <h1>세션(sid) 없음</h1>
-        <p>URL에 세션 ID가 필요합니다. 예: /v?sid=test1</p>
+        <p>URL에 세션 ID가 필요합니다. 예: /v?sid=test-0311</p>
       </main>
     );
   }
@@ -63,23 +64,27 @@ function VoteContent() {
          접근 불가능한 곳을 알기 위해서는 무엇을 보는게 좋을까요?
       </h1>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {CHOICES.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            disabled={!!submitting}
-            onClick={() => handleVote(value)}
-            style={{
-              padding: "1rem",
-              fontSize: "1rem",
-              cursor: submitting ? "not-allowed" : "pointer",
-              opacity: submitting && submitting !== value ? 0.6 : 1,
-            }}
-            aria-label={`${label} 선택`}
-          >
-            {submitting === value ? "전송중…" : label}
-          </button>
-        ))}
+        {CHOICES.map(({ value, label }) => {
+          const isVoted = votedChoice === value;
+          const isDisabled = !!votedChoice || !!submitting;
+          return (
+            <button
+              key={value}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => handleVote(value)}
+              style={{
+                padding: "1rem",
+                fontSize: "1rem",
+                cursor: isDisabled ? "default" : "pointer",
+                opacity: submitting && submitting !== value ? 0.6 : isVoted ? 0.85 : 1,
+              }}
+              aria-label={isVoted ? `${label} 투표 완료` : `${label} 선택`}
+            >
+              {submitting === value ? "전송중…" : isVoted ? `${label} · 투표 완료` : label}
+            </button>
+          );
+        })}
       </div>
       {error && (
         <p style={{ marginTop: "1rem", color: "crimson" }}>{error}</p>

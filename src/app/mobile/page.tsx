@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { isValidSid } from "@/lib/validation";
 
-const DEFAULT_SID = "test1";
+const DEFAULT_SID = "test-0311";
 
 type Props = { searchParams: Promise<{ sid?: string }> };
 

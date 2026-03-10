@@ -1,5 +1,14 @@
 # vote-live 배포 가이드 (vote.banjaeha.com)
 
+## 실시간 투표/집계는 Redis 사용
+
+- **`/api/vote`**, **`/api/state`** 는 **Redis**만 사용합니다. (Vercel KV 또는 Upstash)
+- **Postgres**는 발표 중 실시간 투표 경로(핫패스)에서 **사용하지 않습니다.**  
+  (Prisma/Postgres는 프로젝트에 남아 있으나, 투표 저장·집계에는 쓰이지 않음.)
+- 100명 동시 투표 등 부하를 안정적으로 처리하려면 **반드시 Redis(KV) 환경 변수를 설정**해야 합니다.
+
+---
+
 ## 1. GitHub에 코드 push
 
 ### 1-1. GitHub에서 저장소 생성
@@ -30,10 +39,14 @@ git push -u origin main
    - Build Command: `prisma generate && next build` (또는 비워두고 기본값)
    - Output Directory: 비워두기
 5. **Environment Variables** 추가 (반드시 설정):
-   - **DATABASE_URL**: 앱 런타임용. **반드시 pooled connection string**을 넣으세요.  
-     (Vercel Storage → Postgres → **.env.local** 탭에서 **Pooled** 또는 기본 연결 문자열 복사)
-   - **DIRECT_URL** (권장): 마이그레이션/CLI용 direct connection.  
-     Vercel에서 Pooled/Direct가 따로 주어지면 둘 다 설정. 없으면 DATABASE_URL만 있어도 동작.
+   - **실시간 투표용 Redis (필수)**  
+     - **KV_REST_API_URL** + **KV_REST_API_TOKEN**: Vercel Storage → **KV** 생성 후 `.env.local` 탭에서 복사  
+     - 또는 **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN**: Upstash 콘솔에서 복사  
+     - 둘 중 한 세트만 있으면 됨. 없으면 `/api/vote`, `/api/state` 호출 시 에러 발생.
+   - **DATABASE_URL** (선택): Postgres는 현재 투표 핫패스에서 사용하지 않음. 마이그레이션/기타용으로만 필요 시 설정.  
+     (Vercel Storage → Postgres → **.env.local** 탭에서 Pooled URL)
+   - **DIRECT_URL** (선택): 마이그레이션/CLI용 direct connection.
+   - **RESET_SECRET** (선택): `/api/admin/reset-votes` 초기화용 토큰.
    - **Production / Preview** 둘 다 사용할 경우 해당 환경에 모두 설정해야 합니다.
 6. **Deploy** 클릭
 
@@ -245,3 +258,54 @@ DIRECT_URL="postgresql://..." npx prisma migrate deploy
    ```
    - `token` 값이 `RESET_SECRET`과 일치하면 투표 데이터가 삭제됨.
    - 북마크해 두거나 메모해 두면, Cursor/이 컴퓨터 없이도 언제든 초기화 가능.
+
+   **Redis 사용 시:** `?sid=세션ID` 를 붙이면 해당 세션만 초기화, sid 없으면 전체 vote:* 삭제.
+   ```
+   https://vote.banjaeha.com/api/admin/reset-votes?token=RESET_SECRET&sid=test1
+   ```
+
+---
+
+## Redis(KV) 설정 — 실시간 투표용
+
+실시간 투표/집계(`/api/vote`, `/api/state`)는 **Postgres가 아닌 Redis**를 사용합니다.
+
+1. **Vercel Storage에서 KV 생성**
+   - 프로젝트 대시보드 → **Storage** → **Create Database** → **KV** 선택 → 생성.
+   - 생성된 KV 클릭 → **`.env.local`** 탭에서 `KV_REST_API_URL`, `KV_REST_API_TOKEN` 복사.
+
+2. **환경 변수에 추가**
+   - 프로젝트 **Settings** → **Environment Variables**
+   - Key: `KV_REST_API_URL`, Value: 복사한 URL
+   - Key: `KV_REST_API_TOKEN`, Value: 복사한 토큰
+   - Production / Preview 필요한 환경 체크 → Save.
+
+3. **재배포**  
+   Deployments → 최신 배포 **Redeploy**.
+
+(Upstash를 직접 쓰는 경우에는 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`을 같은 방식으로 설정하면 됩니다.)
+
+---
+
+## 배포 후 부하 테스트 (burst50 / burst100)
+
+Redis 적용 후 동시 투표가 안정적인지 확인하려면:
+
+1. **k6 설치** (맥): `brew install k6`
+2. **새 SID로 burst50 실행**
+   ```bash
+   BASE_URL=https://vote.banjaeha.com SID=burst50-$(date +%s) npm run load:burst50
+   ```
+3. **총합 확인**
+   ```bash
+   node loadtest/check-total.mjs https://vote.banjaeha.com <위에서_쓴_SID>
+   ```
+   총합이 50이면 성공.
+4. **burst100**도 동일하게:
+   ```bash
+   BASE_URL=https://vote.banjaeha.com SID=burst100-$(date +%s) npm run load:burst100
+   node loadtest/check-total.mjs https://vote.banjaeha.com <SID>
+   ```
+   총합 100이면 성공.
+
+자세한 내용은 **LOADTEST.md** 참고.

@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrisma } from "@/lib/db";
+import { getRedis, voteKey, voteUpdatedKey, voteSessionKey, voteKeyPattern } from "@/lib/redis";
+import { isValidSid } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
 /**
  * GET /api/admin/reset-votes?token=YOUR_SECRET
+ * GET /api/admin/reset-votes?token=YOUR_SECRET&sid=xxx
  *
- * 투표 데이터(vote_events) 전체 삭제.
- * RESET_SECRET 환경 변수와 일치하는 token 쿼리만 허용.
- * 외부(다른 PC, 휴대폰)에서 브라우저로 접속해 초기화할 때 사용.
+ * Redis 투표 데이터 삭제.
+ * - sid 있으면 해당 sid만 삭제 (vote:{sid}, vote:{sid}:updated)
+ * - sid 없으면 vote:* 패턴 전체 삭제
+ * RESET_SECRET 환경변수와 token 일치 시에만 실행.
  */
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
+  const sidParam = request.nextUrl.searchParams.get("sid");
   const secret = process.env.RESET_SECRET;
 
   if (!secret) {
@@ -26,12 +30,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const prisma = getPrisma();
-    const result = await prisma.$executeRawUnsafe("DELETE FROM vote_events");
+    const redis = getRedis();
+
+    if (sidParam && isValidSid(sidParam)) {
+      const key = voteKey(sidParam);
+      const updatedKey = voteUpdatedKey(sidParam);
+      const sessionKey = voteSessionKey(sidParam);
+      await redis.del(key, updatedKey, sessionKey);
+      return NextResponse.json({
+        ok: true,
+        message: `세션 "${sidParam}" 투표가 초기화되었습니다.`,
+        deleted: sidParam,
+      });
+    }
+
+    let cursor: string | number = "0";
+    const keysToDelete: string[] = [];
+    do {
+      const [next, keys] = await redis.scan(cursor, { match: voteKeyPattern(), count: 100 });
+      cursor = next as string;
+      keysToDelete.push(...(keys as string[]));
+    } while (cursor !== "0");
+
+    if (keysToDelete.length > 0) {
+      await redis.del(...keysToDelete);
+    }
+
     return NextResponse.json({
       ok: true,
-      message: "투표가 초기화되었습니다.",
-      deleted: result,
+      message: "투표가 전체 초기화되었습니다.",
+      deleted: keysToDelete.length,
     });
   } catch (err) {
     console.error("[GET /api/admin/reset-votes]", err);

@@ -4,7 +4,7 @@ import Link from "next/link";
  * 홈: 발표용 투표 앱 진입점. 실제 사용 시 sid는 발표 세션별로 생성해 공유.
  */
 export default function HomePage() {
-  const sid = "test1";
+  const sid = "test-0311";
   return (
     <main style={{ padding: "2rem", maxWidth: "32rem", margin: "0 auto" }}>
       <h1 style={{ marginBottom: "1rem" }}>MMCA 레지던시의 날</h1>

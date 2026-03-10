@@ -20,7 +20,7 @@ const LABELS: Record<keyof Counts, string> = {
  * 스크린 집계 페이지. 1초 폴링, 실패 시 exponential backoff로 재시도.
  * 성공 시 1초 폴링으로 복귀. 장시간 켜둬도 리프레시 없이 계속 반영.
  */
-const DEFAULT_SID = "test1";
+const DEFAULT_SID = "test-0311";
 
 function ScreenContent() {
   const searchParams = useSearchParams();

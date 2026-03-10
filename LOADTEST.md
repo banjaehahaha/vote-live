@@ -25,7 +25,9 @@ brew install k6
 
 1. **Vercel에 최신 코드 배포**
 2. **Preview 또는 Production URL 확인** (예: `https://vote-xxx.vercel.app` 또는 `https://vote.banjaeha.com`)
-3. **DATABASE_URL**이 해당 배포 환경(Production/Preview)에 설정되어 있는지 Vercel 대시보드에서 확인
+3. **Redis(KV) 환경 변수**가 해당 배포 환경에 설정되어 있는지 확인  
+   (`KV_REST_API_URL` + `KV_REST_API_TOKEN` 또는 `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`)  
+   실시간 투표/집계는 Redis를 사용하며, Postgres는 이 경로에서 사용하지 않습니다.
 
 ---
 
