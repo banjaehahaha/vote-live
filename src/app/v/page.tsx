@@ -60,8 +60,10 @@ function VoteContent() {
 
   return (
     <main style={{ padding: "2rem", maxWidth: "28rem", margin: "0 auto" }}>
-      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.25rem" }}>
-         접근 불가능한 곳을 알기 위해서는 무엇을 보는게 좋을까요?
+      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.25rem", textAlign: "center", whiteSpace: "pre-line" }}>
+        {`접근할 수 없는 곳이 있습니다.
+그곳에 대해 알고 싶다면,
+무엇을 단서로 삼겠습니까?`}
       </h1>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {CHOICES.map(({ value, label }) => {
