@@ -5,8 +5,8 @@ import { isValidSid } from "@/lib/validation";
 export const runtime = "nodejs";
 const NO_STORE = "no-store";
 
-/** 기본 투표 시간 5분 */
-const DEFAULT_VOTE_DURATION_MS = 5 * 60 * 1000;
+/** 기본 투표 시간 1분 */
+const DEFAULT_VOTE_DURATION_MS = 1 * 60 * 1000;
 
 /**
  * POST /api/vote-session
