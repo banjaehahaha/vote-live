@@ -16,6 +16,7 @@ import {
   CHOICE_WORK_TITLES,
   getRankedChoicesFromCounts,
 } from "@/lib/presentation-config";
+import { preloadSceneAssets } from "@/lib/presentation-preload";
 import { getScenesForChoice, RESIDENCY_PLAN_SCENES, type PresentationScene } from "@/lib/presentation-scenes";
 import type { VoteChoice } from "@/lib/validation";
 import {
@@ -940,6 +941,12 @@ function PresentationContent() {
     return stored !== "0";
   });
   const soundEnabledRef = useRef(soundEnabled);
+  /** preload한 자산 URL (중복 요청 방지) */
+  const preloadedUrlsRef = useRef<Set<string>>(new Set());
+  /** present-existing-works에서 warm-up한 work 인덱스 */
+  const warmUpWorkIndexRef = useRef<number | null>(null);
+  /** residency-plan 진입 시 warm-up 완료 여부 */
+  const residencyWarmedUpRef = useRef(false);
 
   /* /presentation 전용: body 스크롤 차단 (다른 페이지로 나가면 해제) */
   useEffect(() => {
@@ -1411,6 +1418,43 @@ function PresentationContent() {
       if (snapshot) persistSnapshot({ sceneIndex: safeSceneIndex });
     }
   }, [stage, sceneCount, sceneIndex, safeSceneIndex, snapshot, persistSnapshot]);
+
+  /** present-existing-works: 현재 work 진입 시 첫 3장면 warm-up, 현재 장면 기준 다음·다다음 장면 preload */
+  useEffect(() => {
+    if (stage !== "present-existing-works" || sceneCount <= 0 || !snapshot) return;
+    const list = getScenesForChoice(snapshot.rankedChoices[currentWorkIndex]);
+    const preloaded = preloadedUrlsRef.current;
+    if (warmUpWorkIndexRef.current !== currentWorkIndex) {
+      warmUpWorkIndexRef.current = currentWorkIndex;
+      for (let i = 0; i < Math.min(3, list.length); i++) {
+        preloadSceneAssets(list[i] ?? null, preloaded);
+      }
+    }
+    const next = safeSceneIndex + 1;
+    const nextNext = safeSceneIndex + 2;
+    if (next < list.length) preloadSceneAssets(list[next] ?? null, preloaded);
+    if (nextNext < list.length) preloadSceneAssets(list[nextNext] ?? null, preloaded);
+  }, [stage, sceneCount, safeSceneIndex, currentWorkIndex, snapshot]);
+
+  /** residency-plan: 진입 시 첫 3장면 warm-up, 현재 장면 기준 다음·다다음 preload */
+  useEffect(() => {
+    if (stage !== "residency-plan") {
+      residencyWarmedUpRef.current = false;
+      return;
+    }
+    const preloaded = preloadedUrlsRef.current;
+    if (!residencyWarmedUpRef.current) {
+      residencyWarmedUpRef.current = true;
+      for (let i = 0; i < Math.min(3, RESIDENCY_PLAN_SCENES.length); i++) {
+        preloadSceneAssets(RESIDENCY_PLAN_SCENES[i] ?? null, preloaded);
+      }
+    }
+    const safeResidencyIndex = Math.min(Math.max(0, residencySceneIndex), RESIDENCY_PLAN_SCENES.length - 1);
+    const next = safeResidencyIndex + 1;
+    const nextNext = safeResidencyIndex + 2;
+    if (next < RESIDENCY_PLAN_SCENES.length) preloadSceneAssets(RESIDENCY_PLAN_SCENES[next] ?? null, preloaded);
+    if (nextNext < RESIDENCY_PLAN_SCENES.length) preloadSceneAssets(RESIDENCY_PLAN_SCENES[nextNext] ?? null, preloaded);
+  }, [stage, residencySceneIndex]);
 
   /** 이전 장면 (키보드 ArrowLeft) */
   const goPrevScene = useCallback(() => {
