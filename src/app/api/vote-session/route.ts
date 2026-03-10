@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRedis, voteSessionKey } from "@/lib/redis";
+import { getRedis, voteSessionKey, voteKey, voteUpdatedKey } from "@/lib/redis";
 import { isValidSid } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -10,9 +10,10 @@ const DEFAULT_VOTE_DURATION_MS = 5 * 60 * 1000;
 
 /**
  * POST /api/vote-session
- * body: { sid, action: "start" | "close" }
- * - start: Redis vote-session:{sid}에 phase=running, closesAt=타임스탬프 설정. 응답에 closesAt 반환.
+ * body: { sid, action: "start" | "close" | "reset" }
+ * - start: Redis vote-session:{sid}에 phase=running, closesAt 설정. 응답에 closesAt 반환.
  * - close: phase=closed 설정.
+ * - reset: phase=idle로 되돌리고 해당 sid 투표 집계 초기화(다시 시작).
  */
 export async function POST(request: NextRequest) {
   let sid: unknown;
@@ -28,15 +29,16 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: { "Cache-Control": NO_STORE } }
       );
     }
-    if (action !== "start" && action !== "close") {
+    if (action !== "start" && action !== "close" && action !== "reset") {
       return NextResponse.json(
-        { error: "Invalid or missing action. Use 'start' or 'close'." },
+        { error: "Invalid or missing action. Use 'start', 'close', or 'reset'." },
         { status: 400, headers: { "Cache-Control": NO_STORE } }
       );
     }
 
     const redis = getRedis();
-    const sessionKey = voteSessionKey(sid as string);
+    const sidStr = sid as string;
+    const sessionKey = voteSessionKey(sidStr);
 
     if (action === "start") {
       const closesAt = Date.now() + DEFAULT_VOTE_DURATION_MS;
@@ -52,6 +54,18 @@ export async function POST(request: NextRequest) {
 
     if (action === "close") {
       await redis.hset(sessionKey, { phase: "closed" });
+      return NextResponse.json(
+        { ok: true },
+        { headers: { "Cache-Control": NO_STORE } }
+      );
+    }
+
+    if (action === "reset") {
+      await redis.del(sessionKey);
+      const key = voteKey(sidStr);
+      const updatedKey = voteUpdatedKey(sidStr);
+      await redis.del(key);
+      await redis.del(updatedKey);
       return NextResponse.json(
         { ok: true },
         { headers: { "Cache-Control": NO_STORE } }

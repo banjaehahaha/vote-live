@@ -1235,6 +1235,23 @@ function PresentationContent() {
     }
   }, [sid]);
 
+  /** 다시 시작: /api/vote-session reset → 투표 초기화 후 idle로 */
+  const restartVote = useCallback(async () => {
+    if (!sid || !isValidSid(sid)) return;
+    try {
+      await fetch("/api/vote-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sid, action: "reset" }),
+      });
+      setVotePhase("idle");
+      setVoteClosesAt(null);
+      setVoteRemainingMs(null);
+    } catch {
+      setVotePhase("idle");
+    }
+  }, [sid]);
+
   /** 결과 확정: counts 또는 수동 순위로 스냅샷 생성 후 locked-result 단계로 */
   const lockResult = useCallback(
     (countsOrManual: CountsSnapshot | RankedChoices, isManual: boolean) => {
@@ -1763,18 +1780,35 @@ function PresentationContent() {
                     </button>
                   )}
                   {votePhase === "running" && (
-                    <button type="button" onClick={endVote} className="vote-stage-btn-main vote-stage-btn-running">
-                      투표 종료
-                    </button>
+                    <>
+                      <button type="button" onClick={endVote} className="vote-stage-btn-main vote-stage-btn-running">
+                        투표 종료
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => lockResult(counts, false)}
+                        className="vote-stage-btn-main"
+                      >
+                        결과 확정
+                      </button>
+                      <button type="button" onClick={restartVote} className="vote-stage-btn-sub">
+                        다시 시작
+                      </button>
+                    </>
                   )}
                   {votePhase === "closed" && (
-                    <button
-                      type="button"
-                      onClick={() => lockResult(counts, false)}
-                      className="vote-stage-btn-main"
-                    >
-                      결과 확정
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => lockResult(counts, false)}
+                        className="vote-stage-btn-main"
+                      >
+                        결과 확정
+                      </button>
+                      <button type="button" onClick={restartVote} className="vote-stage-btn-sub">
+                        다시 시작
+                      </button>
+                    </>
                   )}
                   <button type="button" onClick={() => setPlanBOpen((o) => !o)} className="vote-stage-btn-sub">
                     직접 설정
