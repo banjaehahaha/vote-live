@@ -413,7 +413,27 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
       };
       return (
         <div style={SCENE_FIT_ROOT}>
-          {images.length > 0 && (
+          {scene.video ? (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "hidden",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <video
+                src={scene.video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain" }}
+              />
+            </div>
+          ) : images.length > 0 ? (
             <div
               style={{
                 flex: 1,
@@ -431,7 +451,7 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
           <div
             style={{
               flexShrink: 0,

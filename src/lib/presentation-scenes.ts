@@ -72,20 +72,14 @@ export type WorkScenesMap = Record<VoteChoice, PresentationScene[]>;
 const ITEM_ASSETS = "/presentation-assets/item";
 
 const ITEM_SCENES: PresentationScene[] = [
-  { id: "item-01", template: "title_anchor", images: [`${ITEM_ASSETS}/scene-01-main.jpg`] },
   {
-    id: "item-02",
+    id: "item-01",
     template: "process_flow",
-    images: [
-      `${ITEM_ASSETS}/scene-02-01.jpg`,
-      `${ITEM_ASSETS}/scene-02-02.jpg`,
-      `${ITEM_ASSETS}/scene-02-03.jpg`,
-      `${ITEM_ASSETS}/scene-02-04.jpg`,
-    ],
+    video: `${ITEM_ASSETS}/scene-01.mp4`,
     revealSteps: ["세관사무소", "국가정보원", "세관"],
   },
   {
-    id: "item-03",
+    id: "item-02",
     template: "compare_split",
     paragraphs: ["통관 보류 물건", "실제 도착한 물건들"],
     images: [
@@ -102,7 +96,7 @@ const ITEM_SCENES: PresentationScene[] = [
     ],
   },
   {
-    id: "item-04",
+    id: "item-03",
     template: "commentary_method",
     images: [
       `${ITEM_ASSETS}/scene-04-01.jpg`,
@@ -111,12 +105,12 @@ const ITEM_SCENES: PresentationScene[] = [
     ],
   },
   {
-    id: "item-05",
+    id: "item-04",
     template: "title_anchor",
     centerReplaceSteps: ["물건", "분단을 둘러싼 퍼포먼스"],
   },
   {
-    id: "item-06",
+    id: "item-05",
     template: "title_anchor",
     threeColumnReveal: {
       mainTitle: "노스럽 프라이(Northrop Frye)가 정의한 희극적 인물 유형",
@@ -128,7 +122,7 @@ const ITEM_SCENES: PresentationScene[] = [
     },
   },
   {
-    id: "item-07",
+    id: "item-06",
     template: "commentary_method",
     images: [
       `${ITEM_ASSETS}/scene-07-01.jpg`,
@@ -137,7 +131,7 @@ const ITEM_SCENES: PresentationScene[] = [
     ],
   },
   {
-    id: "item-08",
+    id: "item-07",
     template: "left_right_images",
     images: [
       `${ITEM_ASSETS}/scene-08-left-01.jpg`,
@@ -146,7 +140,7 @@ const ITEM_SCENES: PresentationScene[] = [
     ],
   },
   {
-    id: "item-09",
+    id: "item-08",
     template: "commentary_method",
     images: [
       `${ITEM_ASSETS}/scene-09-01.jpg`,
@@ -155,7 +149,7 @@ const ITEM_SCENES: PresentationScene[] = [
     ],
   },
   {
-    id: "item-10",
+    id: "item-09",
     template: "title_anchor",
     centerReplaceSteps: ["이념", "유통"],
   },
@@ -282,6 +276,17 @@ const DATA_SCENES: PresentationScene[] = [
   },
   {
     id: "data-04",
+    template: "left_image_right_video",
+    images: [`${DATA_ASSETS}/scene-04-left.png`],
+    video: `${DATA_ASSETS}/scene-04-video.mp4`,
+  },
+  {
+    id: "data-05",
+    template: "title_anchor",
+    video: `${DATA_ASSETS}/scene-05-main.mp4`,
+  },
+  {
+    id: "data-06",
     template: "two_columns_titled",
     twoColumns: {
       leftTitle: "분단, 역사, 비극",
@@ -299,7 +304,7 @@ const DATA_SCENES: PresentationScene[] = [
     },
   },
   {
-    id: "data-05",
+    id: "data-07",
     template: "two_columns_titled",
     twoColumns: {
       leftTitle: "",
