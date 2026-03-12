@@ -773,6 +773,42 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
     );
   }
 
+  const twoColImgCap = scene.twoColumnsImageCaption;
+  if (twoColImgCap) {
+    const colCellStyle: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" };
+    return (
+      <div style={SCENE_FIT_ROOT}>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "clamp(1rem, 2vw, 1.5rem)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+            <div style={{ ...colCellStyle, flex: 1 }}>
+              <SceneImageFallback src={twoColImgCap.leftImage} style={{ ...multiImgStyle, width: "100%", height: "100%", objectFit: "contain" }} />
+            </div>
+            <p style={{ ...PRESENT_BODY_STYLE, flexShrink: 0, marginTop: "0.5rem", marginBottom: 0, textAlign: "center", whiteSpace: "pre-line" }}>
+              {twoColImgCap.leftCaption}
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+            <div style={{ ...colCellStyle, flex: 1 }}>
+              <SceneImageFallback src={twoColImgCap.rightImage} style={{ ...multiImgStyle, width: "100%", height: "100%", objectFit: "contain" }} />
+            </div>
+            <p style={{ ...PRESENT_BODY_STYLE, flexShrink: 0, marginTop: "0.5rem", marginBottom: 0, textAlign: "center", whiteSpace: "pre-line" }}>
+              {twoColImgCap.rightCaption}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const twoCol = scene.twoColumns;
   if (twoCol) {
     const colCellStyle: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" };

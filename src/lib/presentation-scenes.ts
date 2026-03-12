@@ -15,7 +15,8 @@ export type SceneTemplateType =
   | "two_columns_titled"
   | "left_image_right_video"
   | "left_images_right_video"
-  | "images_top_highlight_bottom";
+  | "images_top_highlight_bottom"
+  | "two_columns_image_caption";
 
 export interface PresentationScene {
   id: string;
@@ -55,6 +56,13 @@ export interface PresentationScene {
     leftImages: string[];
     rightTitle: string;
     rightImages: string[];
+  };
+  /** 좌/우 두 칼럼, 각 칼럼에 이미지 1장 + 아래 설명글 */
+  twoColumnsImageCaption?: {
+    leftImage: string;
+    leftCaption: string;
+    rightImage: string;
+    rightCaption: string;
   };
   /** 화면 좌우 분할, 각 쪽에 큰 글씨 텍스트 (가운데 정렬). 예: { left: "DMZ", right: "뉴몰든" } */
   splitText?: { left: string; right: string };
@@ -198,6 +206,16 @@ const IMAGE_SCENES: PresentationScene[] = [
     id: "image-07",
     template: "title_anchor",
     centerReplaceSteps: ["하나의 이미지 결과물", "말, 상상, 기술, 오류가 만드는 \n 한 장소의 이미지"],
+  },
+  {
+    id: "image-08",
+    template: "two_columns_image_caption",
+    twoColumnsImageCaption: {
+      leftImage: `${IMAGE_ASSETS}/scene-08-left.png`,
+      leftCaption: "한국어로 검색한 '북한 집'이미지를 학습시킨\n인공지능 모델이 생성한 이미지",
+      rightImage: `${IMAGE_ASSETS}/scene-08-right.png`,
+      rightCaption: "영어로 검색한 'North Korea House' 이미지를 학습시킨\n인공지능 모델이 생성한 이미지",
+    },
   },
 ];
 
