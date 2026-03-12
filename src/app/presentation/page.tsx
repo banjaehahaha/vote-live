@@ -132,6 +132,70 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
   const t = scene.template;
   const images = scene.images?.length ? scene.images : [];
 
+  const baseOverlay = scene.baseImageOverlay;
+  if (baseOverlay) {
+    const showOverlay = sceneRevealIndex % 2 === 1;
+    const overlayStepIndex = showOverlay ? (sceneRevealIndex - 1) / 2 : -1;
+    const step = overlayStepIndex >= 0 && overlayStepIndex < baseOverlay.overlaySteps.length ? baseOverlay.overlaySteps[overlayStepIndex] : null;
+    const overlayImages = step?.images ?? [];
+    const overlayCaptions = step?.captions ?? [];
+    return (
+      <div style={{ ...SCENE_FIT_ROOT, position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 0 }}>
+          <SceneImageFallback src={baseOverlay.baseImage} style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain" }} />
+        </div>
+        {showOverlay && step && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "clamp(1rem, 2vw, 2rem)",
+              padding: "clamp(1rem, 3vw, 2rem)",
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 1,
+            }}
+          >
+            {overlayImages.length === 1 && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", maxWidth: "100%", maxHeight: "100%" }}>
+                <SceneImageFallback src={overlayImages[0]} style={{ maxWidth: "100%", maxHeight: "85%", objectFit: "contain" }} />
+                {overlayCaptions[0] && (
+                  <p style={{ ...PRESENT_BODY_STYLE, marginTop: "0.5rem", textAlign: "center", whiteSpace: "pre-line" }}>{overlayCaptions[0]}</p>
+                )}
+              </div>
+            )}
+            {overlayImages.length === 2 && (
+              <>
+                {overlayImages.map((src: string, i: number) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 0, maxHeight: "100%" }}>
+                    <SceneImageFallback src={src} style={{ maxWidth: "100%", maxHeight: "85%", objectFit: "contain" }} />
+                    {overlayCaptions[i] && (
+                      <p style={{ ...PRESENT_BODY_STYLE, marginTop: "0.5rem", textAlign: "center", whiteSpace: "pre-line" }}>{overlayCaptions[i]}</p>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+            {overlayImages.length >= 3 && (
+              <>
+                {overlayImages.slice(0, 3).map((src: string, i: number) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 0, maxHeight: "100%" }}>
+                    <SceneImageFallback src={src} style={{ maxWidth: "100%", maxHeight: "85%", objectFit: "contain" }} />
+                    {overlayCaptions[i] && (
+                      <p style={{ ...PRESENT_BODY_STYLE, marginTop: "0.5rem", textAlign: "center", whiteSpace: "pre-line" }}>{overlayCaptions[i]}</p>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const centerReplaceSteps = scene.centerReplaceSteps;
   if (centerReplaceSteps?.length) {
     const idx = Math.max(0, Math.min(sceneRevealIndex, centerReplaceSteps.length - 1));
@@ -803,6 +867,89 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
             <p style={{ ...PRESENT_BODY_STYLE, flexShrink: 0, marginTop: "0.5rem", marginBottom: 0, textAlign: "center", whiteSpace: "pre-line" }}>
               {twoColImgCap.rightCaption}
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const eightImg = scene.twoColumnsEightImages;
+  if (eightImg) {
+    const leftImgs = eightImg.leftImages.slice(0, 4);
+    const rightImgs = eightImg.rightImages.slice(0, 4);
+    const colCellStyle: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" };
+    const captionStyle: React.CSSProperties = { ...PRESENT_BODY_STYLE, flexShrink: 0, textAlign: "center", marginBottom: "0.5rem", whiteSpace: "pre-line" };
+    return (
+      <div style={SCENE_FIT_ROOT}>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "clamp(1rem, 2vw, 1.5rem)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+            <p style={captionStyle}>{eightImg.leftCaption}</p>
+            <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateRows: "1fr 1fr", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", overflow: "hidden" }}>
+              {leftImgs.map((src: string, i: number) => (
+                <div key={i} style={colCellStyle}>
+                  <SceneImageFallback src={src} style={{ ...multiImgStyle, width: "100%", height: "100%", objectFit: "contain" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+            <p style={captionStyle}>{eightImg.rightCaption}</p>
+            <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateRows: "1fr 1fr", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", overflow: "hidden" }}>
+              {rightImgs.map((src: string, i: number) => (
+                <div key={i} style={colCellStyle}>
+                  <SceneImageFallback src={src} style={{ ...multiImgStyle, width: "100%", height: "100%", objectFit: "contain" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const topBottom = scene.topBottomImages;
+  if (topBottom) {
+    return (
+      <div style={SCENE_FIT_ROOT}>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+            <SceneImageFallback src={topBottom.topImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          </div>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+            <SceneImageFallback src={topBottom.bottomImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const twoColCaptionTop = scene.twoColumnsCaptionTop;
+  if (twoColCaptionTop) {
+    const captionStyle: React.CSSProperties = { ...PRESENT_BODY_STYLE, flexShrink: 0, textAlign: "center", marginBottom: "0.5rem", whiteSpace: "pre-line" };
+    const cellStyle: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", width: "100%", height: "100%" };
+    return (
+      <div style={SCENE_FIT_ROOT}>
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(1rem, 2vw, 1.5rem)" }}>
+          <div style={cellStyle}>
+            <p style={captionStyle}>{twoColCaptionTop.leftCaption}</p>
+            <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <SceneImageFallback src={twoColCaptionTop.leftImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+            </div>
+          </div>
+          <div style={cellStyle}>
+            <p style={captionStyle}>{twoColCaptionTop.rightCaption}</p>
+            <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <SceneImageFallback src={twoColCaptionTop.rightImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+            </div>
           </div>
         </div>
       </div>
@@ -1528,21 +1675,24 @@ function PresentationContent() {
     if (snapshot) persistSnapshot({ sceneIndex: next });
   }, [sceneCount, sceneIndex, snapshot, persistSnapshot]);
 
-  /** 우측 화살표/다음 장면 클릭: revealSteps·centerReplaceSteps·threeColumnReveal면 단계 진행, 끝나면 다음 장면으로 */
+  /** 우측 화살표/다음 장면 클릭: revealSteps·centerReplaceSteps·threeColumnReveal·baseImageOverlay면 단계 진행, 끝나면 다음 장면으로 */
   const onNextSceneOrReveal = useCallback(() => {
     const steps = currentScene?.revealSteps;
     const replaceSteps = currentScene?.centerReplaceSteps;
     const threeCol = currentScene?.threeColumnReveal;
+    const baseOverlay = currentScene?.baseImageOverlay;
+    const maxBaseOverlay = baseOverlay ? baseOverlay.overlaySteps.length * 2 : 0;
     const hasMoreReveal = steps?.length && sceneRevealIndex < steps.length - 1;
     const hasMoreReplace = replaceSteps?.length && sceneRevealIndex < replaceSteps.length - 1;
     const hasThreeColReveal = threeCol?.columns?.length && sceneRevealIndex < 1;
-    if (hasMoreReveal || hasMoreReplace || hasThreeColReveal) {
+    const hasMoreBaseOverlay = baseOverlay && sceneRevealIndex < maxBaseOverlay;
+    if (hasMoreReveal || hasMoreReplace || hasThreeColReveal || hasMoreBaseOverlay) {
       setSceneRevealIndex((i) => i + 1);
     } else {
       setSceneRevealIndex(0);
       goNextScene();
     }
-  }, [currentScene?.revealSteps, currentScene?.centerReplaceSteps, currentScene?.threeColumnReveal, currentScene, sceneRevealIndex, goNextScene]);
+  }, [currentScene?.revealSteps, currentScene?.centerReplaceSteps, currentScene?.threeColumnReveal, currentScene?.baseImageOverlay, currentScene, sceneRevealIndex, goNextScene]);
 
   useEffect(() => {
     const scenes = snapshot ? getScenesForChoice(snapshot.rankedChoices[currentWorkIndex]) : [];
@@ -1558,7 +1708,27 @@ function PresentationContent() {
       const el = document.activeElement;
       if (el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA" || (el as HTMLElement).isContentEditable)) return;
       if (stage === "residency-plan") {
-        if (e.key === "ArrowLeft" || e.key.toLowerCase() === "p") {
+        if (e.key.toLowerCase() === "p") {
+          e.preventDefault();
+          if (snapshot) {
+            const lastWorkIndex = snapshot.rankedChoices.length - 1;
+            setStage("present-existing-works");
+            setCurrentWorkIndex(lastWorkIndex);
+            setSceneIndex(0);
+            setTimerStatus("idle");
+            setTargetTime(null);
+            setPausedRemainingMs(null);
+            setDisplayRemainingMs(null);
+            persistSnapshot({
+              currentStage: "present-existing-works",
+              currentWorkIndex: lastWorkIndex,
+              sceneIndex: 0,
+              timerStatus: "idle",
+              targetTime: null,
+              pausedRemainingMs: null,
+            });
+          }
+        } else if (e.key === "ArrowLeft") {
           e.preventDefault();
           setResidencySceneIndex((i) => Math.max(0, i - 1));
         } else if (e.key === "ArrowRight") {
@@ -1585,12 +1755,30 @@ function PresentationContent() {
         goNextWork();
       } else if (e.key.toLowerCase() === "p") {
         e.preventDefault();
-        goPrevWork();
+        if (currentWorkIndex <= 0) {
+          setStage("vote");
+          if (snapshot) persistSnapshot({ currentStage: "vote" });
+        } else {
+          goPrevWork();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [stage, goPrevScene, onNextSceneOrReveal, goNextWork, goPrevWork, snapshot, persistSnapshot, residencySceneIndex]);
+  }, [stage, goPrevScene, onNextSceneOrReveal, goNextWork, goPrevWork, snapshot, persistSnapshot, residencySceneIndex, currentWorkIndex]);
+
+  useEffect(() => {
+    if (stage !== "end") return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "p") return;
+      e.preventDefault();
+      setResidencySceneIndex(Math.max(0, RESIDENCY_PLAN_SCENES.length - 1));
+      setStage("residency-plan");
+      persistSnapshot({ currentStage: "residency-plan" });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [stage, persistSnapshot]);
 
   // ---------- Render: invalid sid ----------
   if (!sid || !isValidSid(sid)) {
@@ -1606,11 +1794,6 @@ function PresentationContent() {
   if (stage === "setup") {
     return (
       <main style={{ ...baseStyle, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <h1 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>발표 준비</h1>
-        <p style={{ marginBottom: "0.5rem" }}>세션: {sid}</p>
-        <p style={{ marginBottom: "1rem", opacity: 0.8 }}>
-          네트워크 확인 후 시작하세요.
-        </p>
         <button
           type="button"
           onClick={() => {
@@ -1623,19 +1806,6 @@ function PresentationContent() {
           }}
         >
           시작
-        </button>
-        <button
-          type="button"
-          onClick={() => setStage("intro")}
-          style={{
-            marginTop: "0.5rem",
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            cursor: "pointer",
-            opacity: 0.8,
-          }}
-        >
-          수동 모드 (네트워크 없이 진행)
         </button>
       </main>
     );
@@ -2371,10 +2541,6 @@ function PresentationContent() {
   if (stage === "end") {
     return (
       <main style={{ ...baseStyle, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <h1 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
-          발표 종료
-        </h1>
-        <p style={{ marginBottom: "1rem" }}>Q&A로 전환하세요.</p>
         <button
           type="button"
           onClick={() => {
@@ -2390,7 +2556,7 @@ function PresentationContent() {
           }}
           style={{ padding: "0.5rem 1rem", cursor: "pointer" }}
         >
-          새 발표 시작
+          시작
         </button>
       </main>
     );

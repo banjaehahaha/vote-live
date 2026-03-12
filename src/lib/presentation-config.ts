@@ -28,7 +28,7 @@ export const CHOICE_LABELS: Record<VoteChoice, string> = {
 /** choice별 작업 제목 (발표 본편에서 표시) */
 export const CHOICE_WORK_TITLES: Record<VoteChoice, string> = {
   ITEM: "허풍선이, 촌뜨기, 익살꾼",
-  IMAGE: "HOME, SWEET HOME 시리즈",
+  IMAGE: "MAKE HOME, SWEET HOME",
   DATA: "정산없는 시장",
   NEAR: "뜻밖의 보간과 최근접 이웃 찾기",
 };

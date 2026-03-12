@@ -16,7 +16,11 @@ export type SceneTemplateType =
   | "left_image_right_video"
   | "left_images_right_video"
   | "images_top_highlight_bottom"
-  | "two_columns_image_caption";
+  | "two_columns_image_caption"
+  | "base_image_overlay_steps"
+  | "two_columns_eight_images"
+  | "top_bottom_images"
+  | "two_columns_caption_top";
 
 export interface PresentationScene {
   id: string;
@@ -63,6 +67,27 @@ export interface PresentationScene {
     leftCaption: string;
     rightImage: string;
     rightCaption: string;
+  };
+  /** 베이스 이미지 위에 오른쪽 화살표로 오버레이 순차 표시/숨김 (보임→숨김 반복) */
+  baseImageOverlay?: {
+    baseImage: string;
+    overlaySteps: { images: string[]; captions?: string[] }[];
+  };
+  /** 좌/우 각각 설명(가운데 정렬) + 이미지 4장 세로 1열(4행) */
+  twoColumnsEightImages?: {
+    leftCaption: string;
+    rightCaption: string;
+    leftImages: string[];
+    rightImages: string[];
+  };
+  /** 상단 이미지 1장 + 하단 이미지 1장 (위/아래 배치) */
+  topBottomImages?: { topImage: string; bottomImage: string };
+  /** 좌/우 각각 상단 가운데 설명 + 아래 이미지 1장 */
+  twoColumnsCaptionTop?: {
+    leftCaption: string;
+    leftImage: string;
+    rightCaption: string;
+    rightImage: string;
   };
   /** 화면 좌우 분할, 각 쪽에 큰 글씨 텍스트 (가운데 정렬). 예: { left: "DMZ", right: "뉴몰든" } */
   splitText?: { left: string; right: string };
@@ -180,8 +205,19 @@ const IMAGE_SCENES: PresentationScene[] = [
   },
   {
     id: "image-02",
-    template: "title_anchor",
-    images: [`${IMAGE_ASSETS}/scene-02-main.jpg`],
+    template: "base_image_overlay_steps",
+    baseImageOverlay: {
+      baseImage: `${IMAGE_ASSETS}/scene-02-main.png`,
+      overlaySteps: [
+        { images: [`${IMAGE_ASSETS}/scene-02-01.jpg`] },
+        { images: [`${IMAGE_ASSETS}/scene-02-02-01.png`, `${IMAGE_ASSETS}/scene-02-02-02.png`], captions: ["한국어로 검색한 '북한 집'이미지를 학습시킨\n인공지능 모델이 생성한 이미지", "영어로 검색한 'North Korea House' 이미지를 학습시킨\n인공지능 모델이 생성한 이미지"] },
+        { images: [`${IMAGE_ASSETS}/scene-02-03.jpg`] },
+        { images: [`${IMAGE_ASSETS}/scene-02-04.jpg`] },
+        { images: [`${IMAGE_ASSETS}/scene-02-05-01.jpg`, `${IMAGE_ASSETS}/scene-02-05-02.jpg`, `${IMAGE_ASSETS}/scene-02-05-03.jpg`] },
+        { images: [`${IMAGE_ASSETS}/scene-02-06.jpg`] },
+        { images: [`${IMAGE_ASSETS}/scene-02-07.jpg`] },
+      ],
+    },
   },
   {
     id: "image-03",
@@ -190,34 +226,30 @@ const IMAGE_SCENES: PresentationScene[] = [
   },
   {
     id: "image-04",
-    template: "title_anchor",
-    images: [`${IMAGE_ASSETS}/scene-04-main.jpg`],
+    template: "two_columns_eight_images",
+    twoColumnsEightImages: {
+      leftCaption: "한국어로 검색한 '북한 집'이미지를 학습시킨\n인공지능 모델이 생성한 이미지",
+      rightCaption: "영어로 검색한 'North Korea House' 이미지를 학습시킨\n인공지능 모델이 생성한 이미지",
+      leftImages: [
+        `${IMAGE_ASSETS}/scene-04-left-01.png`,
+        `${IMAGE_ASSETS}/scene-04-left-02.png`,
+        `${IMAGE_ASSETS}/scene-04-left-03.png`,
+        `${IMAGE_ASSETS}/scene-04-left-04.png`,
+      ],
+      rightImages: [
+        `${IMAGE_ASSETS}/scene-04-right-01.png`,
+        `${IMAGE_ASSETS}/scene-04-right-02.png`,
+        `${IMAGE_ASSETS}/scene-04-right-03.png`,
+        `${IMAGE_ASSETS}/scene-04-right-04.png`,
+      ],
+    },
   },
   {
     id: "image-05",
     template: "title_anchor",
-    images: [`${IMAGE_ASSETS}/scene-05-main.jpg`],
+    centerReplaceSteps: ["기술 비판", "사회정치적 한계"],
   },
-  {
-    id: "image-06",
-    template: "title_anchor",
-    images: [`${IMAGE_ASSETS}/scene-06-main.jpg`],
-  },
-  {
-    id: "image-07",
-    template: "title_anchor",
-    centerReplaceSteps: ["하나의 이미지 결과물", "말, 상상, 기술, 오류가 만드는 \n 한 장소의 이미지"],
-  },
-  {
-    id: "image-08",
-    template: "two_columns_image_caption",
-    twoColumnsImageCaption: {
-      leftImage: `${IMAGE_ASSETS}/scene-08-left.png`,
-      leftCaption: "한국어로 검색한 '북한 집'이미지를 학습시킨\n인공지능 모델이 생성한 이미지",
-      rightImage: `${IMAGE_ASSETS}/scene-08-right.png`,
-      rightCaption: "영어로 검색한 'North Korea House' 이미지를 학습시킨\n인공지능 모델이 생성한 이미지",
-    },
-  },
+
 ];
 
 const DATA_ASSETS = "/presentation-assets/data";
@@ -346,17 +378,22 @@ const NEAR_SCENES: PresentationScene[] = [
   {
     id: "near-02",
     template: "title_anchor",
-    video: `${NEAR_ASSETS}/scene-02-main.mp4`,
+    video: `${NEAR_ASSETS}/scene-03-main.mp4`,
   },
   {
     id: "near-03",
     template: "title_anchor",
-    video: `${NEAR_ASSETS}/scene-03-main.mp4`,
+    video: `${NEAR_ASSETS}/scene-02-main.mp4`,
   },
   {
     id: "near-04",
     template: "title_anchor",
     video: `${NEAR_ASSETS}/scene-04-main.mp4`,
+  },
+  {
+    id: "near-05",
+    template: "title_anchor",
+    images: [`${NEAR_ASSETS}/scene-05-main.png`],
   },
 ];
 
@@ -373,35 +410,43 @@ export function getScenesForChoice(choice: VoteChoice): PresentationScene[] {
 
 const RESIDENCY_ASSETS = "/presentation-assets/residency";
 
-/** 레지던시 계획 단계용 장면 5개. 내용 수정은 여기서. */
+/** 레지던시 계획 단계용 장면 7개. 내용 수정은 여기서. */
 export const RESIDENCY_PLAN_SCENES: PresentationScene[] = [
   { id: "residency-01", template: "title_anchor", splitText: { left: "DMZ", right: "뉴몰든" } },
   { id: "residency-02", template: "title_anchor", images: [`${RESIDENCY_ASSETS}/scene-02.jpg`] },
   {
     id: "residency-03",
     template: "title_anchor",
-    flowDiagram: {
-      topImage: `${RESIDENCY_ASSETS}/scene-03-top.jpg`,
-      diagramImage: `${RESIDENCY_ASSETS}/flow-diagram.png`,
-      steps: [
-        { mainLabel: "변수", title: "18개의 실제 분단관련 데이터", details: "(API연동, 데이터 파이프라인, 자동수집)" },
-        { mainLabel: "지표", title: "가상의 6가지 DMZ관련 지표", details: "(지표 합성 알고리즘, 시계열 처리, 스코어링 모델)" },
-        { mainLabel: "해석", title: "4가지 시장 판독 모델", details: "(멀티 모델 추론 구조, 병렬 판독 로직, 다중 해석 엔진 아키텍처)" },
-        { mainLabel: "입력", title: "관객참여 인터페이스", details: "(관객 응답 데이터 수집, 성향 변수화)" },
-        { mainLabel: "출력", title: "필지 추천 리포트 출력", details: "('관객참여지수'변환 (자동 해석 리포트))" },
-      ],
-    },
+    images: [`${RESIDENCY_ASSETS}/scene-03-main.jpg`],
   },
   {
     id: "residency-04",
+    template: "top_bottom_images",
+    topBottomImages: {
+      topImage: `${RESIDENCY_ASSETS}/scene-04-top.png`,
+      bottomImage: `${RESIDENCY_ASSETS}/scene-04-bottom.png`,
+    },
+  },
+  {
+    id: "residency-05",
     template: "left_images_right_video",
     images: [`${RESIDENCY_ASSETS}/scene-04-left-1.jpg`, `${RESIDENCY_ASSETS}/scene-04-left-2.jpg`],
     video: `${RESIDENCY_ASSETS}/scene-04-video.mp4`,
   },
   {
-    id: "residency-05",
+    id: "residency-06",
     template: "images_top_highlight_bottom",
-    images: [`${RESIDENCY_ASSETS}/scene-05-1.jpg`, `${RESIDENCY_ASSETS}/scene-05-2.png`, `${RESIDENCY_ASSETS}/scene-05-3.jpg`],
+    images: [`${RESIDENCY_ASSETS}/scene-05-1.jpg`, `${RESIDENCY_ASSETS}/scene-05-2.jpg`, `${RESIDENCY_ASSETS}/scene-05-3.jpg`],
     subtitle: "사적공간 → 공적공간",
+  },
+  {
+    id: "residency-07",
+    template: "two_columns_caption_top",
+    twoColumnsCaptionTop: {
+      leftCaption: "인공지능이 만든 '영국의 탈북민 집 거실'",
+      leftImage: `${RESIDENCY_ASSETS}/scene-07-left.png`,
+      rightCaption: "실제 뉴몰든 거주 탈북민의 집",
+      rightImage: `${RESIDENCY_ASSETS}/scene-07-right.png`,
+    },
   },
 ];
