@@ -165,6 +165,7 @@ const ITEM_SCENES: PresentationScene[] = [
 
 const IMAGE_ASSETS = "/presentation-assets/image";
 
+/** 이미지 작업 장면 (1~8). 장면8: 좌우 이미지+설명(two_columns_image_caption). */
 const IMAGE_SCENES: PresentationScene[] = [
   {
     id: "image-01",
