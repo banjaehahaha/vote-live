@@ -202,6 +202,21 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
     const text = centerReplaceSteps[idx];
     return (
       <div style={{ ...SCENE_FIT_ROOT, justifyContent: "center", alignItems: "center" }}>
+        {scene.label && (
+          <p
+            style={{
+              margin: 0,
+              marginBottom: "0.5rem",
+              fontSize: "clamp(42px, 4.5vw, 60px)",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.5)",
+              textAlign: "center",
+              whiteSpace: "pre-line",
+            }}
+          >
+            {scene.label}
+          </p>
+        )}
         <p
           key={idx}
           className="present-reveal-step"
@@ -757,6 +772,42 @@ function renderSceneByTemplate(scene: PresentationScene, sceneRevealIndex = 0) {
     );
   }
 
+  if (t === "left_video_right_image") {
+    const lvri = scene.leftVideoRightImage;
+    if (lvri) {
+      const cellStyle: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" };
+      return (
+        <div style={SCENE_FIT_ROOT}>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: "hidden",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1rem",
+              alignContent: "stretch",
+            }}
+          >
+            <div style={cellStyle}>
+              <video
+                src={lvri.video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+              />
+            </div>
+            <div style={cellStyle}>
+              <SceneImageFallback src={lvri.rightImage} style={{ ...multiImgStyle, width: "100%", height: "100%", objectFit: "contain" }} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+  }
+
   if (t === "left_images_right_video") {
     const leftImages = images.slice(0, 2);
     const cellStyle: React.CSSProperties = { minHeight: 0, minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" };
@@ -1167,6 +1218,14 @@ function PresentationContent() {
     if (typeof window !== "undefined") sessionStorage.setItem("vote-live-sound-enabled", soundEnabled ? "1" : "0");
   }, [soundEnabled]);
 
+  /** 사용자 제스처 후 호출: 효과음이 켜져 있으면 AudioContext 생성·resume (브라우저 정책 대응) */
+  const ensureAudioContextResumed = useCallback(() => {
+    if (!soundEnabledRef.current || typeof window === "undefined") return;
+    const ctx = audioContextRef.current ?? new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    audioContextRef.current = ctx;
+    if (ctx.state !== "running") ctx.resume().catch(() => {});
+  }, []);
+
   /** /api/state 폴링: counts, voteSession(phase, closesAt) 반영. vote 단계에서만 연속 폴링. */
   const fetchState = useCallback(async (): Promise<boolean> => {
     if (!sid || !isValidSid(sid)) return false;
@@ -1411,6 +1470,7 @@ function PresentationContent() {
   /** 투표 시작: /api/vote-session start → closesAt 설정 */
   const startVote = useCallback(async () => {
     if (!sid || !isValidSid(sid)) return;
+    ensureAudioContextResumed();
     try {
       const res = await fetch("/api/vote-session", {
         method: "POST",
@@ -1426,7 +1486,7 @@ function PresentationContent() {
     } catch {
       setVotePhase("idle");
     }
-  }, [sid]);
+  }, [sid, ensureAudioContextResumed]);
 
   /** 투표 종료: /api/vote-session close */
   const endVote = useCallback(async () => {
@@ -1797,6 +1857,7 @@ function PresentationContent() {
         <button
           type="button"
           onClick={() => {
+            ensureAudioContextResumed();
             fetchState().then(() => setStage("intro"));
           }}
           style={{
@@ -2089,7 +2150,8 @@ function PresentationContent() {
                       if (!soundEnabled) {
                         const ctx = audioContextRef.current ?? new AudioContext();
                         audioContextRef.current = ctx;
-                        ctx.resume();
+                        ctx.resume().then(() => setSoundEnabled(true)).catch(() => setSoundEnabled(true));
+                        return;
                       }
                       setSoundEnabled((v) => !v);
                     }}

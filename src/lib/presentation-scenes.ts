@@ -20,7 +20,8 @@ export type SceneTemplateType =
   | "base_image_overlay_steps"
   | "two_columns_eight_images"
   | "top_bottom_images"
-  | "two_columns_caption_top";
+  | "two_columns_caption_top"
+  | "left_video_right_image";
 
 export interface PresentationScene {
   id: string;
@@ -89,6 +90,8 @@ export interface PresentationScene {
     rightCaption: string;
     rightImage: string;
   };
+  /** 좌측 영상 + 우측 이미지 1장 */
+  leftVideoRightImage?: { video: string; rightImage: string };
   /** 화면 좌우 분할, 각 쪽에 큰 글씨 텍스트 (가운데 정렬). 예: { left: "DMZ", right: "뉴몰든" } */
   splitText?: { left: string; right: string };
   /** 상단 이미지 + 하단 가로 흐름 구조도 (변수→지표→해석→입력→출력 + 피드백) */
@@ -412,20 +415,25 @@ const RESIDENCY_ASSETS = "/presentation-assets/residency";
 
 /** 레지던시 계획 단계용 장면 7개. 내용 수정은 여기서. */
 export const RESIDENCY_PLAN_SCENES: PresentationScene[] = [
-  { id: "residency-01", template: "title_anchor", splitText: { left: "DMZ", right: "뉴몰든" } },
-  { id: "residency-02", template: "title_anchor", images: [`${RESIDENCY_ASSETS}/scene-02.jpg`] },
+  { id: "residency-01", template: "title_anchor", splitText: { left: "중국-훈춘", right: "영국-뉴몰든" } },
+  {
+    id: "residency-02",
+    template: "title_anchor",
+    video: `${RESIDENCY_ASSETS}/scene-02.mp4`,
+  },
   {
     id: "residency-03",
-    template: "title_anchor",
-    images: [`${RESIDENCY_ASSETS}/scene-03-main.jpg`],
+    template: "left_video_right_image",
+    leftVideoRightImage: {
+      video: `${RESIDENCY_ASSETS}/scene-03-video.mp4`,
+      rightImage: `${RESIDENCY_ASSETS}/scene-03.jpg`,
+    },
   },
   {
     id: "residency-04",
-    template: "top_bottom_images",
-    topBottomImages: {
-      topImage: `${RESIDENCY_ASSETS}/scene-04-top.png`,
-      bottomImage: `${RESIDENCY_ASSETS}/scene-04-bottom.png`,
-    },
+    template: "title_anchor",
+    label: "남한의 분단체제를 살아온 사람에게",
+    centerReplaceSteps: ["남한의 바깥을 체험할 수 있는가?"],
   },
   {
     id: "residency-05",
